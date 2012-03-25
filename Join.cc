@@ -240,8 +240,11 @@ bool Join::AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe, Record & keyValue
 	do{
 		empty = (0 == pipe->Remove(&keyValue)); //Get new record that (potentially) matches our key
 		if(side == 0 && keyValue.GetNumAtts() != 7){
-			cout << "Num atts was not 7. Fuck it, I'm out" << endl;
-			keyValue.Print(testSchema);
+			clog << "Num atts was not 7. Fuck it, I'm out" << endl;
+			clog << "With the left schema: " << endl;
+			keyValue.Print(lSchema);
+			clog << "With the right schema: " << endl;
+			keyValue.Print(rSchema);
 			exit(-1);
 		}
 		counter++;
@@ -492,6 +495,7 @@ void Join::Use_n_Pages (int runlen) {
   pageSize = runlen;
 }
 
-void Join::SetSchema(Schema *x){
-	testSchema = x;
+void Join::SetSchemas(Schema *l, Schema *r){
+	lSchema = l;
+	rSchema = r;
 }

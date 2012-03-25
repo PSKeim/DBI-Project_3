@@ -22,8 +22,9 @@ public:
 		  CNF &selOp, Record &literal);
 	void WaitUntilDone ();
 	void Use_n_Pages (int n);
-	void SetSchema(Schema *x);
-	Schema *testSchema;
+	void SetSchemas(Schema *l, Schema *r);
+	Schema *lSchema;
+	Schema *rSchema;
 
 private:
 

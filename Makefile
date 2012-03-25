@@ -1,5 +1,5 @@
 
-CC = g++ -O0 -ggdb3 -Wno-deprecated
+CC = g++ -O0 -ggdb3 -Wno-deprecated -Wall -pedantic -Wextra
 
 tag = -i
 
