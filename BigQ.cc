@@ -311,15 +311,15 @@ void BigQ::SecondPhasev2(){
 			
 			totOffset = offsets[mindex]+offUpdate[mindex];
 		//	cout << "Total offset was "<<totOffset<<endl;
-			//cout << "F length is " << f.GetLength() << endl;
-			//cout << "Offsets mindex is " << offsets[mindex+1] << endl;
+		//	cout << "F length is " << f.GetLength() << endl;
+		//	cout << "Offsets mindex is " << offsets[mindex+1] << endl;
 			if((totOffset < f.GetLength()-1) 
 				&& ((totOffset) < offsets[mindex+1]))
 			{
-			//	cout << "Updating page for run " << mindex << endl;
-			//	cout << "Getting page at " << totOffset << endl;
+		//		cout << "Updating page for run " << mindex << endl;
+		//		cout << "Getting page at " << totOffset << endl;
 				f.GetPage(pageArray[mindex], offsets[mindex]+offUpdate[mindex]);
-			//	cout << "Going from offset " << totOffset << " to offset " << totOffset+1 << endl;
+		//		cout << "Going from offset " << totOffset << " to offset " << totOffset+1 << endl;
 				offUpdate[mindex]++;
 				pageArray[mindex]->GetFirst(recs[mindex]);
 			}

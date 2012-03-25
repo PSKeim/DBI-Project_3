@@ -31,7 +31,7 @@ private:
 	void CreateAndInsertRecord(Record *left, Record *right);
 
 	bool AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe,
-			    Record *temp, OrderMaker *order);
+			    Record &temp, OrderMaker *order, int side);
 
 	bool AdvanceKeyPointer(Pipe *pipe, Record *temp, OrderMaker *order);
 

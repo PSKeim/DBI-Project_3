@@ -128,15 +128,36 @@ void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
 	lPipe.Remove(&leftKeyRec);
 	rPipe.Remove(&rightKeyRec);
 	
+	//use this later
+	//Record *oldKey;
+
+	int count = 0;
+	int leftC = 0;
+	int rightC = 0;
+	int outC = 0;
+
 	do{
-		//cout << "LEft number of attributes " << leftKeyRec.GetNumAtts() << endl;
-		//cout << "Right number of attributes " << rightKeyRec.GetNumAtts() << endl;
 
 		result = cEngine.Compare(&leftKeyRec, left, &rightKeyRec, right);
+		//cout << "Result was " << result << endl;
+		count ++;
+
+		if(count % 10000 == 0) cout << count << endl;
+
 		if(result == 0){ //Match between the key records, we need to fill the subset vectors, compute the cartesian product, then advance the key records
-			//Fill the subset vectors					
-			lIsEmpty = AdvanceJoinSet(leftSet, &lPipe, &leftKeyRec, left);			
-			rIsEmpty = AdvanceJoinSet(rightSet, &rPipe, &rightKeyRec, right);
+			//Fill the subset vectors		
+			//cout << "L has " << leftKeyRec.GetNumAtts() << endl;
+	//		cout << "R has " << rightKeyRec.GetNumAtts() << endl;			
+			lIsEmpty = AdvanceJoinSet(leftSet, &lPipe, leftKeyRec, left, 0);
+			//cout << "INSIDE L has " << leftKeyRec.GetNumAtts() << endl;
+			leftC += leftSet.size();		
+			rIsEmpty = AdvanceJoinSet(rightSet, &rPipe, rightKeyRec, right, 1);
+			rightC += rightSet.size();
+
+	//		cout << "INSIDe R has " << rightKeyRec.GetNumAtts() << endl;
+			//testing
+		//	cout << "New result " << cEngine.Compare(&leftKeyRec, left, &rightKeyRec, right) << endl;
+			
 			// Compute the cartesian product
 			//Can optimize this to scan the smaller size more, but we'll worry about that later.
 			for (int i = 0; i < leftSet.size(); i++){
@@ -145,27 +166,63 @@ void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
 				}
 			}
 			numOutput += leftSet.size() * rightSet.size();
-		 	cout << " I have output "<<numOutput<<" records" << endl;
+		 	//cout << " I have output "<<numOutput<<" records" << endl;
 			//Advancing the key records is done automatically in AdvanceJoinSet
 			//That is, at the end of AJS, leftKeyRec will be the first record that did not match on key values
-			cout << "Inserted the Cartesian product" << endl;
+			//cout << "Inserted the Cartesian product" << endl;
 		}
-		if(result < 0){ //Left record is smaller than right record, so we need to advance the left key
-			//Advance left key record
-			lIsEmpty = AdvanceKeyPointer(&lPipe, &leftKeyRec, left);
-			cout << "Advanced left key record" << endl;
+
+		else if(result < 0){ //Left record is smaller than right record, so we need to advance the left key
+				//Advance left key record
+			Record *oldKey = new Record;
+			oldKey->Copy(&leftKeyRec); //Since we're advancing the key anyways. It's okay if we consume it
+			bool empty = false;
+			if(lPipe.Remove(&leftKeyRec)){ //Pull something from the pipe (if you can)
+				leftC++;
+				count++;
+				while((cEngine.Compare(oldKey, &leftKeyRec, left) == 0) && !empty){ //While it still matches the old key, and the pipe has stuff in it...
+					leftC++;
+					count++;
+					empty = (0 == lPipe.Remove(&leftKeyRec)); //Get a new record
+				}
+			}
+			if(cEngine.Compare(oldKey, &leftKeyRec, left) == 0 && empty){
+				leftKeyRec.bits = NULL;
+			}
+		//cout << "New Key Selected" << endl;
 		}
-		if(result > 0){ //Right record is smaller than left record, so we need to advance the right key
+
+		else if(result > 0){ //Right record is smaller than left record, so we need to advance the right key
 			//Advance the right key record
-			rIsEmpty = AdvanceKeyPointer(&rPipe, &rightKeyRec, right);
-			cout << "Advanced right key record" << endl;
+			//rIsEmpty = AdvanceKeyPointer(&rPipe, &rightKeyRec, right);
+			//cout << "Advanced right key record" << endl;
+			Record *oldKey = new Record;
+			oldKey->Consume(&rightKeyRec); //Since we're advancing the key anyways. It's okay if we consume it
+			bool empty = false;
+	
+			if(rPipe.Remove(&rightKeyRec)){ //Pull something from the pipe (if you can)
+				rightC++;
+				count++;
+				while((cEngine.Compare(oldKey, &rightKeyRec, right) == 0) && !empty){ //While it still matches the old key, and the pipe has stuff in it...
+					rightC++;
+					count++;
+					empty = (0 == rPipe.Remove(&rightKeyRec)); //Get a new record
+				}
+			}
+			if(cEngine.Compare(oldKey, &rightKeyRec, right) == 0 && empty){
+				rightKeyRec.bits = NULL;
+			}
+			//cout << "Updated right key record" << endl;
 		}
 
 	}while(!leftKeyRec.isEmpty() && !rightKeyRec.isEmpty()); //Terminate when the pipes are done
 
+	cout << leftC << " left records done" << endl;
+	cout << rightC << " right records done" << endl;
+	cout << numOutput << " records inserted" << endl;
 }
-
-bool Join::AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe, Record *keyValue, OrderMaker *order){
+	
+bool Join::AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe, Record & keyValue, OrderMaker *order, int side){
 	//Clear out the buffer from our previous use
 	for(int i = 0; i < buffer.size(); i++){
 		delete buffer[i];
@@ -173,15 +230,22 @@ bool Join::AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe, Record *keyValue,
 	buffer.clear();
 	//Now we put our key record into the start of the buffer
 	buffer.push_back(new Record);
-	buffer[0]->Consume(keyValue);
+	buffer[0]->Consume(&keyValue);
 	int result = 0;
 	bool empty = false;
 	ComparisonEngine cEngine;
 
+	int counter = 0;
+
 	do{
-		empty = (0 == pipe->Remove(keyValue)); //Get new record that (potentially) matches our key
+		empty = (0 == pipe->Remove(&keyValue)); //Get new record that (potentially) matches our key
+		if(side == 0 && keyValue.GetNumAtts() != 7){
+			cout << "Num atts was not 7. Fuck it, I'm out" << endl;
+			exit(-1);
+		}
+		counter++;
 		if(!empty){
-			result = cEngine.Compare(buffer[0], keyValue, order); //Does it?
+			result = cEngine.Compare(buffer[0], &keyValue, order); //Does it?
 		}
 		else{
 			result = 1;
@@ -189,18 +253,19 @@ bool Join::AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe, Record *keyValue,
 		
 		if(result == 0){ 
 			buffer.push_back(new Record); //IT DOES! Add it to the set and begin again
-			buffer[buffer.size()-1]->Consume(keyValue);
+			buffer[buffer.size()-1]->Consume(&keyValue);
 		}
 		
 	}while(result == 0 && !empty); //We do this until we don't have a match (result != 0) or the pipe is empty
 
+	//cout << "Advance join set added " << counter << " records" << endl;
 	if(empty && result == 0){ //The pipe is now empty, and the last record we read matched our previous key. So we make our key record empty
-		keyValue->bits = NULL; //So
+		keyValue.bits = NULL; //So
 	}
 
 	return empty;
 }
-
+/*
 bool Join::AdvanceKeyPointer(Pipe *pipe, Record *keyRec, OrderMaker *order){
 	//Variables for temporary storage
 	Record *oldKey = new Record;
@@ -209,13 +274,14 @@ bool Join::AdvanceKeyPointer(Pipe *pipe, Record *keyRec, OrderMaker *order){
 	bool empty = false;
 	
 	if(pipe->Remove(keyRec)){ //Pull something from the pipe (if you can)
-		while((cEngine.Compare(keyRec, oldKey, order) == 0) && !empty){ //While it still matches the old key, and the pipe has stuff in it...
+		while((cEngine.Compare(oldKey, keyRec, order) == 0) && !empty){ //While it still matches the old key, and the pipe has stuff in it...
 			empty = (0 == pipe->Remove(keyRec)); //Get a new record
-		}		
+		}
+		//cout << "New Key Selected" << endl;
 	}
 
 	return empty;
-}
+}*/
 /*
 void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
 

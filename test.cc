@@ -100,6 +100,7 @@ void init_SF_c (char *pred_str, int numpgs) {
 
 // select * from partsupp where ps_supplycost <1.03 
 // expected output: 31 records
+// REAL out put is 21 records.
 void q1 () {
 
 	char *pred_ps = "(ps_supplycost < 1.03)";
@@ -117,6 +118,7 @@ void q1 () {
 
 // select p_partkey(0), p_name(1), p_retailprice(7) from part where (p_retailprice > 931.01) AND (p_retailprice < 931.3);
 // expected output: 22 records
+// REAL output is 12 records.
 void q2 () {
 
 	char *pred_p = "(p_retailprice > 931.01) AND (p_retailprice < 931.3)";
@@ -147,6 +149,8 @@ void q2 () {
 
 // select sum (s_acctbal + (s_acctbal * 1.05)) from supplier;
 // expected output: 9.24623e+07
+// That actually IS the real output.
+
 void q3 () {
 
 	char *pred_s = "(s_suppkey = s_suppkey)";
