@@ -5,6 +5,7 @@
 #include "Pipe.h"
 #include "Record.h"
 #include "Comparison.h"
+#include "Schema.h"
 
 #include <vector>
 
@@ -21,6 +22,8 @@ public:
 		  CNF &selOp, Record &literal);
 	void WaitUntilDone ();
 	void Use_n_Pages (int n);
+	void SetSchema(Schema *x);
+	Schema *testSchema;
 
 private:
 
