@@ -134,7 +134,7 @@ void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
 	int count = 0;
 	int leftC = 0;
 	int rightC = 0;
-	int outC = 0;
+	
 
 	do{
 
@@ -160,8 +160,8 @@ void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
 			
 			// Compute the cartesian product
 			//Can optimize this to scan the smaller size more, but we'll worry about that later.
-			for (int i = 0; i < leftSet.size(); i++){
-				for (int j = 0; j < rightSet.size(); j++){
+			for (unsigned int i = 0; i < leftSet.size(); i++){
+				for (unsigned int j = 0; j < rightSet.size(); j++){
 				  CreateAndInsertRecord(leftSet[i], rightSet[j]);
 				}
 			}
@@ -224,7 +224,7 @@ void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
 	
 bool Join::AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe, Record & keyValue, OrderMaker *order, int side){
 	//Clear out the buffer from our previous use
-	for(int i = 0; i < buffer.size(); i++){
+	for(unsigned int i = 0; i < buffer.size(); i++){
 		delete buffer[i];
 	}
 	buffer.clear();
@@ -241,6 +241,7 @@ bool Join::AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe, Record & keyValue
 		empty = (0 == pipe->Remove(&keyValue)); //Get new record that (potentially) matches our key
 		if(side == 0 && keyValue.GetNumAtts() != 7){
 			cout << "Num atts was not 7. Fuck it, I'm out" << endl;
+			keyValue.Print(testSchema);
 			exit(-1);
 		}
 		counter++;
@@ -313,7 +314,7 @@ void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
     // What follows is an implementation of the sort-merge join
   while (leftIsNotEmpty && rightIsNotEmpty){
 
-/*	if(leftKeyRec == NULL){
+	if(leftKeyRec == NULL){
 		cout << "Left record is null" << endl;
 		if(rightKeyRec == NULL) cout << "Right record is also null" << endl;
 		assert(leftKeyRec != NULL);
@@ -450,7 +451,7 @@ void Join::CreateAndInsertRecord(Record *left, Record *right){
   int numAttsRight = right->GetNumAtts();
   int numAttsTotal = numAttsLeft + numAttsRight;
 
-  int attsToKeep[numAttsTotal];
+  int * attsToKeep = (int *) alloca(sizeof(int) * numAttsTotal);
   int index = 0;
 
   for (int i = 0; i < numAttsLeft; i++){
@@ -489,4 +490,8 @@ void Join::WaitUntilDone () {
 
 void Join::Use_n_Pages (int runlen) {
   pageSize = runlen;
+}
+
+void Join::SetSchema(Schema *x){
+	testSchema = x;
 }
