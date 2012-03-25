@@ -199,6 +199,7 @@ void q4 () {
 		CNF cnf_p_ps;
 		Record lit_p_ps;
 		J.Use_n_Pages(pipesz);
+		J.SetSchema(p->schema());
 		get_cnf ("(s_suppkey = ps_suppkey)", s->schema(), ps->schema(), cnf_p_ps, lit_p_ps);
 
 	int outAtts = sAtts + psAtts;
