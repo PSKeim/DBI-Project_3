@@ -182,6 +182,7 @@ void q3 () {
 // select sum (ps_supplycost) from supplier, partsupp 
 // where s_suppkey = ps_suppkey;
 // expected output: 4.00406e+08
+// REAL OUTPUT 4.00421e+08
 void q4 () {
 
 	cout << " query4 \n";

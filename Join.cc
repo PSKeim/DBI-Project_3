@@ -10,6 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <time.h>
+#include <cstdlib>
 
 using std::vector;
 using std::stringstream;
@@ -100,7 +101,7 @@ void Join::ExecuteBlockNestJoin(){
 
 void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
 	//Setting up the BigQ pipes
-	int pipesize = 100;
+	int pipesize = 1000;
 	Pipe lPipe(pipesize);
 	Pipe rPipe(pipesize);
 	
@@ -147,7 +148,7 @@ void Join::ExecuteSortMergeJoin(OrderMaker *left, OrderMaker *right){
 		if(result == 0){ //Match between the key records, we need to fill the subset vectors, compute the cartesian product, then advance the key records
 			//Fill the subset vectors		
 			//cout << "L has " << leftKeyRec.GetNumAtts() << endl;
-	//		cout << "R has " << rightKeyRec.GetNumAtts() << endl;			
+			//cout << "R has " << rightKeyRec.GetNumAtts() << endl;			
 			lIsEmpty = AdvanceJoinSet(leftSet, &lPipe, leftKeyRec, left, 0);
 			//cout << "INSIDE L has " << leftKeyRec.GetNumAtts() << endl;
 			leftC += leftSet.size();		
@@ -239,7 +240,7 @@ bool Join::AdvanceJoinSet(vector<Record*> &buffer, Pipe *pipe, Record & keyValue
 
 	do{
 		empty = (0 == pipe->Remove(&keyValue)); //Get new record that (potentially) matches our key
-		if(side == 0 && keyValue.GetNumAtts() != 7){
+		if(side == 0 && keyValue.GetNumAtts() == 5){
 			clog << "Num atts was not 7. Fuck it, I'm out" << endl;
 			clog << "With the left schema: " << endl;
 			keyValue.Print(lSchema);
