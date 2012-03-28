@@ -7,11 +7,11 @@ ifdef linux
 tag = -n
 endif
 
-test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o RelOp.o SelectFile.o SelectPipe.o WriteOut.o Project.o DuplicateRemoval.o Sum.o GroupBy.o Join.o Function.o y.tab.o yyfunc.tab.o lex.yy.o lex.yyfunc.o test.o
-	$(CC) -o test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o RelOp.o SelectFile.o SelectPipe.o WriteOut.o Project.o DuplicateRemoval.o Sum.o GroupBy.o Join.o Function.o y.tab.o yyfunc.tab.o lex.yy.o lex.yyfunc.o test.o -lfl -lpthread -lrt
+a3.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o RelOp.o SelectFile.o SelectPipe.o WriteOut.o Project.o DuplicateRemoval.o Sum.o GroupBy.o Join.o Function.o y.tab.o yyfunc.tab.o lex.yy.o lex.yyfunc.o test.o
+	$(CC) -o a3.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o RelOp.o SelectFile.o SelectPipe.o WriteOut.o Project.o DuplicateRemoval.o Sum.o GroupBy.o Join.o Function.o y.tab.o yyfunc.tab.o lex.yy.o lex.yyfunc.o test.o -lfl -lpthread -lrt
 
 a1.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o StopWatch.o y.tab.o lex.yy.o a1.o
-	$(CC) -o a1.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o StopWatch.o y.tab.o lex.yy.o a1.o -lfl -lpthread
+	$(CC) -o a1.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o StopWatch.o y.tab.o lex.yy.o a1.o -lfl -lpthread -lrt
 
 a21.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o InternalDB.o HeapDB.o SortedDB.o Pipe.o y.tab.o lex.yy.o a21.o
 	$(CC) -o a21.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o InternalDB.o HeapDB.o SortedDB.o Pipe.o y.tab.o lex.yy.o a21.o -lfl -lpthread -lrt
@@ -19,8 +19,8 @@ a21.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.
 a22.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o Pipe.o InternalDB.o HeapDB.o SortedDB.o y.tab.o lex.yy.o a22.o
 	$(CC) -o a22.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o BigQ.o DBFile.o InternalDB.o HeapDB.o SortedDB.o Pipe.o y.tab.o lex.yy.o a22.o -lfl -lpthread -lrt
 
-a3.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o RelOp.o SelectFile.o SelectPipe.o WriteOut.o Function.o y.tab.o yyfunc.tab.o lex.yy.o lex.yyfunc.o a3test.o
-	$(CC) -o a3.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o RelOp.o SelectFile.o SelectPipe.o WriteOut.o Function.o y.tab.o yyfunc.tab.o lex.yy.o lex.yyfunc.o a3test.o -lfl -lpthread -lrt
+a3test.out: Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o RelOp.o SelectFile.o SelectPipe.o WriteOut.o Function.o y.tab.o yyfunc.tab.o lex.yy.o lex.yyfunc.o a3test.o
+	$(CC) -o a3test.out Record.o Comparison.o ComparisonEngine.o Schema.o File.o DBFile.o Pipe.o BigQ.o InternalDB.o HeapDB.o SortedDB.o RelOp.o SelectFile.o SelectPipe.o WriteOut.o Function.o y.tab.o yyfunc.tab.o lex.yy.o lex.yyfunc.o a3test.o -lfl -lpthread -lrt
 
 test.o: test.cc test.h
 	$(CC) -g -c test.cc

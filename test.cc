@@ -100,7 +100,6 @@ void init_SF_c (char *pred_str, int numpgs) {
 
 // select * from partsupp where ps_supplycost <1.03 
 // expected output: 31 records
-// REAL out put is 21 records.
 void q1 () {
 
 	char *pred_ps = "(ps_supplycost < 1.03)";
@@ -118,7 +117,6 @@ void q1 () {
 
 // select p_partkey(0), p_name(1), p_retailprice(7) from part where (p_retailprice > 931.01) AND (p_retailprice < 931.3);
 // expected output: 22 records
-// REAL output is 12 records.
 void q2 () {
 
 	char *pred_p = "(p_retailprice > 931.01) AND (p_retailprice < 931.3)";
@@ -149,8 +147,6 @@ void q2 () {
 
 // select sum (s_acctbal + (s_acctbal * 1.05)) from supplier;
 // expected output: 9.24623e+07
-// That actually IS the real output.
-
 void q3 () {
 
 	char *pred_s = "(s_suppkey = s_suppkey)";
@@ -182,7 +178,6 @@ void q3 () {
 // select sum (ps_supplycost) from supplier, partsupp 
 // where s_suppkey = ps_suppkey;
 // expected output: 4.00406e+08
-// REAL OUTPUT 4.00421e+08
 void q4 () {
 
 	cout << " query4 \n";
@@ -200,7 +195,6 @@ void q4 () {
 		CNF cnf_p_ps;
 		Record lit_p_ps;
 		J.Use_n_Pages(pipesz);
-		J.SetSchemas(s->schema(), ps->schema());
 		get_cnf ("(s_suppkey = ps_suppkey)", s->schema(), ps->schema(), cnf_p_ps, lit_p_ps);
 
 	int outAtts = sAtts + psAtts;
@@ -271,8 +265,7 @@ void q5 () {
 // where s_suppkey = ps_suppkey groupby s_nationkey;
 // expected output: 25 rows
 void q6 () {
-
-	cout << " query6 \n";
+cout << " query6 \n";
 	char *pred_s = "(s_suppkey = s_suppkey)";
 	init_SF_s (pred_s, 100);
 	SF_s.Run (dbf_s, _s, cnf_s, lit_s); // 10k recs qualified
@@ -287,6 +280,7 @@ void q6 () {
 		CNF cnf_p_ps;
 		Record lit_p_ps;
 		get_cnf ("(s_suppkey = ps_suppkey)", s->schema(), ps->schema(), cnf_p_ps, lit_p_ps);
+		J.Use_n_Pages(pipesz);
 
 	int outAtts = sAtts + psAtts;
 	Attribute s_nationkey = {"s_nationkey", Int};
@@ -296,12 +290,17 @@ void q6 () {
 
 	GroupBy G;
 		// _s (input pipe)
-		Pipe _out (1);
+//		Pipe _out (1);
+		Pipe _out (100);
 		Function func;
 			char *str_sum = "(ps_supplycost)";
 			get_cnf (str_sum, &join_sch, func);
 			func.Print ();
-			OrderMaker grp_order (&join_sch);
+//			OrderMaker grp_order (&join_sch);
+			OrderMaker grp_order;
+			grp_order.numAtts = 1;
+			grp_order.whichAtts[0] = 3;
+			grp_order.whichTypes[0] = Int;
 	G.Use_n_Pages (1);
 
 	SF_ps.Run (dbf_ps, _ps, cnf_ps, lit_ps); // 161 recs qualified
@@ -312,8 +311,11 @@ void q6 () {
 	J.WaitUntilDone ();
 	G.WaitUntilDone ();
 
-	Schema sum_sch ("sum_sch", 1, &DA);
-	int cnt = clear_pipe (_out, &sum_sch, true);
+//	Schema sum_sch ("sum_sch", 1, &DA);
+//	int cnt = clear_pipe (_out, &sum_sch, true);
+	Attribute sumGroupByAttrs[] = {DA, IA};
+	Schema sumGroupBySchema("sumGroupBy", 2, sumGroupByAttrs);
+	int cnt = clear_pipe(_out, &sumGroupBySchema, true);
 	cout << " query6 returned sum for " << cnt << " groups (expected 25 groups)\n"; 
 }
 
@@ -350,7 +352,120 @@ G: same as T but do it over each group identified by ordermaker
 D: stuff only distinct records into the out_pipe discarding duplicates
 W: write out records from in_pipe to a file using out_schema
 */
-	cout << " TBA\n";
+
+	/*
+		SELECTION SECTION
+	*/
+	//So many joins. How ware we going to start this?
+	//Well, first would be a select on supplier.
+	char * pred_s = "(s_acctbal > 2500.0)"; 
+	init_SF_s (pred_s, 100);
+	
+	//We now have a pipe, _s, with the records from supplier that are matching to our predicate.
+	//Next to get is the p
+	char * pred_p = "(p_partkey = p_partkey)"; 
+	init_SF_p (pred_p, 100);
+
+	//And finally to get the PS
+	char * pred_ps = "(ps_partkey = ps_partkey)"; 
+	init_SF_ps (pred_ps, 100);
+
+	/*
+		JOIN SECTION
+	*/
+
+	//We need to calculate the schemas for the two schemas resulting from the joins
+
+	Attribute ps_suppkey = {"ps_suppkey", Int};s
+	Attribute ps_supplycost = {"ps_supplycost", Double};
+
+	int J1NumAtts = pAtts + psAtts;
+	Attribute j1Atts[] = {IA, SA, SA, SA, SA, IA, SA, DA, SA, //P
+				 IA, ps_suppkey, IA, ps_supplycost, SA}; // PS
+	Schema j1_Schema("j1_schema", J1NumAtts, j1Atts);
+
+
+	int J2NumAtts = pAtts + psAtts + sAtts;
+	Attribute j2Atts[] = {IA, SA, SA, SA, SA, IA, SA, DA, SA,  //P
+				 IA, ps_suppkey, IA, ps_supplycost, SA, // PS
+				 IA, SA, SA, IA, SA, DA, SA}; // S
+	Schema j2_Schema("j2_schema", J2NumAtts, j2Atts);
+
+	//Now we have to do a join on the pipes _ps and _p
+	Join J1;
+		// left _p
+		// right _ps
+		J1.Use_n_Pages(pipesz);
+		Pipe _p_ps (pipesz); //Output pipe
+		CNF cnf_p_ps;
+		Record lit_p_ps;
+		get_cnf ("(p_partkey = ps_partkey)", p->schema(), ps->schema(), cnf_p_ps, lit_p_ps);
+
+	//Need to craft the schema of this join to use in J2. So:
+
+	
+	//This will be the fun one. It's the join of J1 and Supplier. So, we do:
+		//left _s
+		//right _p_ps
+	Join J2;
+		J2.Use_n_Pages(pipesz);
+		Pipe _p_ps_s (pipesz);
+		CNF cnf_p_ps_s;
+		Record lit_p_ps_s;
+		get_cnf("(s_suppkey = ps_suppkey )",s->schema(), &j1_Schema, cnf_p_ps_s, lit_p_ps_s);
+
+
+	/*
+		SUM SECTION
+	*/
+	//We now take the records we created in J2, take them from the _p_ps_s pipe, and sum them
+	Sum T;
+		// _p_ps_s (input pipe)
+		T.Use_n_Pages (pipesz);
+		Pipe _out (pipesz);
+		Function func;
+		char *str_sum = "(ps_supplycost)";
+		get_cnf (str_sum, &j2_Schema, func);
+		func.Print ();
+		//Don't need to calculate the output schema for this. 1 attribute, type double
+	
+	/*
+		WRITEOUT SECTION
+	*/
+	//And because it's useful, we then write the result out to file
+	WriteOut W;
+		char *fwpath = "q7.tmp";
+		FILE *writeFile = fopen (fwpath, "w");
+		Attribute atts[] = {DA};
+		Schema mindex("fun_sch", 1, atts);
+		
+	
+
+	//Run block
+	//SELECTIONS
+	SF_s.Run(dbf_s, _s, cnf_s, lit_s); //copy/pasta'd
+	SF_p.Run(dbf_p, _p, cnf_p, lit_p);
+	SF_ps.Run(dbf_ps, _ps, cnf_ps, lit_ps); 
+
+	//JOINS
+	J1.Run(_p, _ps, _p_ps, cnf_p_ps, lit_p_ps); //Join p and ps
+	J2.Run(_s, _p_ps, _p_ps_s, cnf_p_ps_s, lit_p_ps_s); //The s and the p_ps join table
+
+	//SUM
+	T.Run(_p_ps_s, _out, func); //Then we compute over _p_ps_s
+	
+	//WRITEOUT
+	W.Run(_out,writeFile, mindex); //And leave
+
+	SF_s.WaitUntilDone ();
+	SF_p.WaitUntilDone ();
+	SF_ps.WaitUntilDone ();
+	J1.WaitUntilDone ();
+	J2.WaitUntilDone ();
+	T.WaitUntilDone ();
+	W.WaitUntilDone ();
+	
+	cout << "End of query 7, results have been written to the q7.tmp file";
 }
 
 void q8 () { 
@@ -369,8 +484,33 @@ possible plan:
 		P (l_orderkey,l_partkey,l_suppkey) => __l
 	On __l:
 		W (__l)
+
+CNF is (l_returnflag = 'R') AND (l_discount < 0.04 OR l_shipmode = 'MAIL')
 */
-	cout << " TBA\n";
+
+	//This is simply a Selection followed by a Projection.
+	//We need a predicate for our selection first
+	char * pred_li = "(l_returnflag = 'R') AND (l_discount < 0.04 OR l_shipmode = 'MAIL')";
+	//So, now with this predicate, we can initialize the Selection
+
+	init_SF_li (pred_li, 100); //WTF does the 100 do? Ask Morgan
+		SF_li.Run(dbf_li, _li, cnf_li, lit_li); //copy/pasta'd
+
+	//SF is now running, so we need to work on the project next
+	Project P_li;
+		Pipe _pli (pipesz);
+	//Project wants 3 attributes: l_orderkey, l_partkey, and l_suppkey. From my dicking around earlier, I knwo they're the first three attributes of LI.
+		int keepMe[] = {0,1,2};  //Do they start from 0? ASk Morgan
+		int numAttsIn = liAtts;
+		int numAttsOut = 3;
+		P_li.Use_n_Pages (100);
+		P_li.Run(_li, _pli, keepMe, numAttsIn, numAttsOut); //copy/pasta'd
+
+	Attribute attList[] = {IA, IA, IA};//All 3 attributes are integers according to the catalog
+	Schema out_sch ("out_sch", numAttsOut, attList);
+	
+	int cnt = clear_pipe (_pli, &out_sch, false);	
+	cout << "Query returned " << cnt << " records. " << endl;
 }
 
 int main (int argc, char *argv[]) {

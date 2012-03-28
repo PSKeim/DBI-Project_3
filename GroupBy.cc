@@ -41,7 +41,7 @@ void GroupBy::DoWork (){
 
 
   Type type;
-  Record *prev = new Record;
+  Record *prev = NULL;
   Record *readIn = new Record;
 
     // Store the overall computation results
@@ -132,7 +132,7 @@ void GroupBy::CreateAndInsertRecord(Record *rec, Type type,
     // record that was passed in.
 
     // Build the aggregate column
-  Attribute atts[1];
+  Attribute *atts = new Attribute[1];
 
     // Conversion from numeric value to string will happen in
     // a stringstream
@@ -167,7 +167,7 @@ void GroupBy::CreateAndInsertRecord(Record *rec, Type type,
 
     // Build the array of attributes to keep in the record
   int numAttsToKeep = 1 + _groupAtts->numAtts;
-  int attsToKeep[numAttsToKeep];
+  int *attsToKeep = new int[numAttsToKeep];
 
     // Sum record only has one column
   attsToKeep[0] = 0;
@@ -176,15 +176,19 @@ void GroupBy::CreateAndInsertRecord(Record *rec, Type type,
   for (int i = 1; i < numAttsToKeep; i++){
     attsToKeep[i] = _groupAtts->whichAtts[i-1];
   }
-std::cout << numAttsToKeep << std::endl;
+
     // Now merge the two records
-//  toPipe->MergeRecords(aggregate, rec, 1, _groupAtts->numAtts, attsToKeep, 1);
+  toPipe->MergeRecords(aggregate, rec, 1, _groupAtts->GetNumAtts(),
+		      attsToKeep, numAttsToKeep, 1);
 
     // Add record to the output pipe
-//  _outPipe->Insert(toPipe);
+  _outPipe->Insert(toPipe);
 
   delete toPipe;
   delete aggregate;
+
+  delete[] atts;
+  delete[] attsToKeep;
 
 }
 

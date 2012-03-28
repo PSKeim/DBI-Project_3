@@ -48,9 +48,6 @@ public:
 	// shut down the pipepine; used by the consumer to signal that 
 	// there is no more data that is going to be added into the pipe
 	void ShutDown ();
-	
-	//Function that tells me if the pipe has been shut down or not.
-	bool isDone();
 
 };
 

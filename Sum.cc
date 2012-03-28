@@ -66,7 +66,7 @@ void Sum::DoWork (){
     // Build the schema that will be used to construct the record
 
     // Schema will only have one attribute
-  Attribute atts[1];
+  Attribute *atts = new Attribute[1];
 
     // Conversion from numeric value to string will happen in
     // a stringstream
@@ -103,6 +103,8 @@ void Sum::DoWork (){
 
   delete sum;
   delete readIn;
+
+  delete[] atts;
 
 }
 

@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <time.h>
 #include <pthread.h>
+#include <iostream>
 
 using std::vector;
 
@@ -29,6 +30,7 @@ BigQ :: BigQ (Pipe &in, Pipe &out, OrderMaker &sortorder, int runlen)
   timespec time;
   clock_gettime(CLOCK_REALTIME, &time);
   int timestamp = time.tv_sec*1000000000 + time.tv_nsec;
+  if (timestamp < 0) timestamp *= -1;
 
     // Initialize the file that will contain all run information
   sprintf(filename, "bigq_externsort_%d.bin", timestamp);
@@ -58,6 +60,11 @@ void* BigQ::SortWorker(void *args){
   self->runfile.Close();
 
   self->DeleteTempFile();
+
+    // finally shut down the out pipe. This signals the
+    // pipe so it knows that it won't be getting more
+    // data.
+  self->out->ShutDown();
 
     // Exit the thread
   pthread_exit(NULL);
@@ -199,6 +206,7 @@ void BigQ::ExternalSortMergePhase() {
 
   int runNum = 0;
 
+
   while (!pqueue.empty()){
 
       // Get the run object
@@ -239,23 +247,19 @@ void BigQ::ExternalSortMergePhase() {
 	pqueue.push(temp);
 
       } // end if startPos[runNum]
+      else {
+	delete pages[runNum];
+      }
 
     } // end if..else
 
   } // end while !pqueue.empty()
 
-    // finally shut down the out pipe. This signals the
-    // pipe so it knows that it won't be getting more
-    // data.
-  out->ShutDown();
-
     // run and temp are deleted during normal execution
   delete tempRec;
 
-  for (int i; i < pages.size(); i++){
-    delete pages[i];
-  }
   pages.clear();
+
 
 } // end ExternalSortMergePhase
 
